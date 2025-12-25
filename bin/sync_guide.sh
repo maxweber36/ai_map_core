@@ -4,17 +4,22 @@
 # 📖 AI Map Sync Tool
 # ==============================================================================
 # Auto-detects project type (Flutter, Node, Go, Python) and scans for modules.
-# Configurable via ai-map/config.sh
+# TARGET_DIRS can be configured via ai-map/config.sh
 # ==============================================================================
 
 GUIDE_FILE="ai-map/AI_MAP.md"
 CONTEXT_FILE="CONTEXT.md"
 CONFIG_FILE="ai-map/config.sh"
 
-# 默认变量 (可在 config.sh 中覆盖)
-HEADER_PROJECT_NAME="Project"
-HEADER_TECH_STACK="- **Core**: (Auto-detected or Configured)"
+# 默认变量
 TARGET_DIRS="" # 将由自动探测或配置填充
+
+# 仅用于初始化骨架，不从 config 覆盖
+HEADER_PROJECT_NAME_PLACEHOLDER="（由 AI 在初始化后补全项目名）"
+HEADER_TECH_STACK_PLACEHOLDER=$(cat <<EOF
+- **技术栈**:（由 AI 在初始化后补全）
+EOF
+)
 
 # 1. 确保在脚本出错时退出
 set -e
@@ -54,12 +59,6 @@ detect_project_defaults() {
     if [ -f "pubspec.yaml" ]; then
         echo "✨ Detected Flutter/Dart project"
         TARGET_DIRS="lib/features lib/core lib/app"
-        HEADER_TECH_STACK=$(cat <<EOF
-- **Core Framework**: Flutter
-- **Language**: Dart
-- **State Management**: (Check pubspec.yaml)
-EOF
-)
     elif [ -f "package.json" ]; then
         echo "✨ Detected Node.js/Web project"
         # 尝试常见的源码目录
@@ -68,20 +67,9 @@ EOF
         else
             TARGET_DIRS="app features modules"
         fi
-        HEADER_TECH_STACK=$(cat <<EOF
-- **Environment**: Node.js / Web
-- **Language**: JavaScript / TypeScript
-- **Package Manager**: npm/yarn/pnpm
-EOF
-)
     elif [ -f "go.mod" ]; then
         echo "✨ Detected Go project"
         TARGET_DIRS="internal pkg cmd"
-        HEADER_TECH_STACK=$(cat <<EOF
-- **Language**: Go
-- **Module System**: Go Modules
-EOF
-)
     elif [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
         echo "✨ Detected Python project"
         # Python 结构多变，尝试探测 src 或直接扫描当前目录下的包
@@ -93,30 +81,23 @@ EOF
             # 简单的回退：假设项目名同名的文件夹是源码
             TARGET_DIRS="$(basename "$PWD")"
         fi
-        HEADER_TECH_STACK=$(cat <<EOF
-- **Language**: Python
-- **Environment**: (Virtualenv/Conda recommended)
-EOF
-)
     else
         echo "⚠️ No specific project type detected. Using generic defaults."
         TARGET_DIRS="src lib modules"
-        HEADER_TECH_STACK="- **Type**: Generic Project"
     fi
 }
 
-# 允许用户覆盖的 Header 生成器
+# Header 生成器（仅用于骨架）
 generate_guide_header() {
-    # 如果用户没有在 config.sh 中重定义此函数，将使用以下默认模板
     cat <<EOF
-# 📖 AI MAP: $HEADER_PROJECT_NAME
+# 📖 AI MAP: $HEADER_PROJECT_NAME_PLACEHOLDER
 
 > 🤖 **AI & Developer Readme**
 > This document is the "Constitution" of the project. It defines core architecture, standards, and the module map.
 > **Note:** The "Module Index" below is auto-generated. Please modify $CONTEXT_FILE in each module directory and run bin/sync_guide.sh --sync to update.
 
 ## 🏗️ 架构概览 (Architecture)
-$HEADER_TECH_STACK
+$HEADER_TECH_STACK_PLACEHOLDER
 
 ## 📏 开发准则 (Principles)
 1. **Single Responsibility**: Each module defines its boundary via $CONTEXT_FILE.
@@ -163,6 +144,13 @@ if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
 fi
 
+# 初始化骨架仅使用占位符，避免被 config 覆盖
+HEADER_PROJECT_NAME_PLACEHOLDER="（由 AI 在初始化后补全项目名）"
+HEADER_TECH_STACK_PLACEHOLDER=$(cat <<EOF
+- **技术栈**:（由 AI 在初始化后补全）
+EOF
+)
+
 # 检查 TARGET_DIRS 是否有效，如果为空或目录不存在，给出警告但继续（可能只是一些目录不存在）
 FINAL_DIRS=""
 for dir in $TARGET_DIRS; do
@@ -185,13 +173,11 @@ fi
 # --- 主逻辑 (扫描与生成) ---
 
 # 创建临时文件
-MODULES_BUFFER=$(mktemp)
+MODULES_TABLE=$(mktemp)
 
 # 写入表头
-echo "## 📂 模块索引 (Module Index)" >> "$MODULES_BUFFER"
-echo "" >> "$MODULES_BUFFER"
-echo "| Module | Responsibility | Context |" >> "$MODULES_BUFFER"
-echo "| :--- | :--- | :---: |" >> "$MODULES_BUFFER"
+echo "| Module | Responsibility | Context |" >> "$MODULES_TABLE"
+echo "| :--- | :--- | :---: |" >> "$MODULES_TABLE"
 
 if [ -n "$FINAL_DIRS" ]; then
     echo "🔍 Scanning directories: $FINAL_DIRS"
@@ -221,7 +207,7 @@ if [ -n "$FINAL_DIRS" ]; then
                 # 3. 添加到表格
                 clean_path=${module_path#./}
                 # 生成相对链接
-                echo "| $clean_path | $responsibility | [View](../$clean_path/$CONTEXT_FILE) |" >> "$MODULES_BUFFER"
+                echo "| $clean_path | $responsibility | [View](../$clean_path/$CONTEXT_FILE) |" >> "$MODULES_TABLE"
             fi
         done
     done
@@ -231,16 +217,73 @@ fi
 
 # --- 组装最终文件 ---
 
+MODULES_SECTION=$(mktemp)
+echo "## 📂 模块索引 (Module Index)" >> "$MODULES_SECTION"
+echo "" >> "$MODULES_SECTION"
+echo "<!-- MODULE_INDEX_START -->" >> "$MODULES_SECTION"
+cat "$MODULES_TABLE" >> "$MODULES_SECTION"
+echo "<!-- MODULE_INDEX_END -->" >> "$MODULES_SECTION"
+
+update_last_synced() {
+    local file_path=$1
+    local now
+    now=$(date)
+    local tmp
+    tmp=$(mktemp)
+    awk -v now="$now" '
+        BEGIN { updated=0 }
+        /^\*Last synced:/ || /^_Last synced:/ {
+            print "*Last synced: " now "*"
+            updated=1
+            next
+        }
+        { print }
+        END {
+            if (updated == 0) {
+                print ""
+                print "---"
+                print "*Last synced: " now "*"
+            }
+        }
+    ' "$file_path" > "$tmp"
+    mv "$tmp" "$file_path"
+}
+
+write_new_guide() {
+    generate_guide_header > "$GUIDE_FILE"
+    echo "" >> "$GUIDE_FILE"
+    cat "$MODULES_SECTION" >> "$GUIDE_FILE"
+    echo "" >> "$GUIDE_FILE"
+    echo "---" >> "$GUIDE_FILE"
+    echo "*Last synced: $(date)*" >> "$GUIDE_FILE"
+}
+
 # 确保输出目录存在
 mkdir -p "$(dirname "$GUIDE_FILE")"
 
-generate_guide_header > "$GUIDE_FILE"
-echo "" >> "$GUIDE_FILE"
-cat "$MODULES_BUFFER" >> "$GUIDE_FILE"
-echo "" >> "$GUIDE_FILE"
-echo "---" >> "$GUIDE_FILE"
-echo "*Last synced: $(date)*" >> "$GUIDE_FILE"
+if [ "$MODE" = "init" ] || [ ! -f "$GUIDE_FILE" ]; then
+    write_new_guide
+else
+    if grep -q "<!-- MODULE_INDEX_START -->" "$GUIDE_FILE" && grep -q "<!-- MODULE_INDEX_END -->" "$GUIDE_FILE"; then
+        tmp_guide=$(mktemp)
+        awk -v table_file="$MODULES_TABLE" '
+            BEGIN {
+                while ((getline line < table_file) > 0) {
+                    table = table line "\n"
+                }
+            }
+            /<!-- MODULE_INDEX_START -->/ { print; print table; in=1; next }
+            /<!-- MODULE_INDEX_END -->/ { print; in=0; next }
+            !in { print }
+        ' "$GUIDE_FILE" > "$tmp_guide"
+        mv "$tmp_guide" "$GUIDE_FILE"
+        update_last_synced "$GUIDE_FILE"
+    else
+        echo "⚠️  MODULE_INDEX markers not found. Regenerating $GUIDE_FILE."
+        write_new_guide
+    fi
+fi
 
-rm "$MODULES_BUFFER"
+rm "$MODULES_TABLE" "$MODULES_SECTION"
 
 echo "✅ $GUIDE_FILE has been updated."

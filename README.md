@@ -45,7 +45,7 @@ AI Map 系统由两个层次的文档构成：
 .
 ├── ai-map/                  # AI Map 核心文档目录
 │   ├── AI_MAP.md            # 总地图 (项目全局索引)
-│   ├── config.sh            # [可选] 项目配置文件 (自定义扫描路径等)
+│   ├── config.sh            # [可选] 项目配置文件 (仅配置 TARGET_DIRS)
 ├── bin/
 │   └── sync_guide.sh        # 自动化同步工具 (聚合 CONTEXT.md)
 ├── lib/                     # 源代码 (以 Flutter 为例，支持任意语言)
@@ -72,7 +72,7 @@ chmod +x bin/sync_guide.sh
 ```
 
 **✨ 智能特性：**
-该脚本现已支持 **自动探测 (Auto-detect)** 项目类型。
+该脚本支持 **自动探测 (Auto-detect)** 项目类型，仅用于初始化/同步时的 `TARGET_DIRS`。
 
 - **Flutter**: 自动扫描 `lib/features`, `lib/core`
 - **Node.js**: 自动扫描 `src/modules`, `src/features` 等
@@ -84,24 +84,13 @@ chmod +x bin/sync_guide.sh
 ### 第二步：高级配置 (可选)
 
 如果自动探测不满足需求，或者你想自定义扫描路径，请创建 `ai-map/config.sh`。
-该配置会影响 **初始化阶段**（`--init`）与 **同步阶段**（`--sync`）的模块扫描范围：
+该配置会影响 **初始化阶段**（`--init`）与 **同步阶段**（`--sync`）的模块扫描范围（仅 `TARGET_DIRS`）：
 
 ```bash
 # ai-map/config.sh 示例
 
-# 自定义项目名称
-HEADER_PROJECT_NAME="My Super App"
-
 # 强制指定扫描目录 (空格分隔)
 TARGET_DIRS="app/routers app/services app/utils"
-
-# 自定义技术栈描述 (显示在 AI_MAP.md 头部)
-HEADER_TECH_STACK=$(cat <<EOF
-- **Framework**: FastAPI
-- **Database**: PostgreSQL
-- **Architecture**: Domain Driven Design
-EOF
-)
 ```
 
 ### 第三步：初始化文档框架（首次运行）
@@ -114,13 +103,13 @@ EOF
 
 脚本会：
 
-1.  生成/更新 `ai-map/AI_MAP.md` 的框架内容。
+1.  生成/更新 `ai-map/AI_MAP.md` 的框架内容（仅骨架，项目名/技术栈为占位符）。
 2.  若命中 `TARGET_DIRS`，在其 **一级子目录**生成 `CONTEXT.md` 骨架模板。
 3.  **不会**提取职责内容，仅搭建结构。
 
-### 第四步：AI 辅助内容填充 (可选)
+### 第四步：AI 辅助内容填充
 
-如果你希望 AI 参与内容填充，建议先完成 `--init` 搭建文档骨架，再让 AI 依据骨架补充真实职责与规范。
+如果你希望 AI 参与内容填充，建议先完成 `--init` 搭建文档骨架，再让 AI 依据骨架补充 **项目名、技术栈** 以及各模块职责与规范。
 
 > **提示**：AI 辅助初始化 prompt 已存储在 `ai-map/INITIALIZE_PROMPT.md`，可直接复制使用。
 
