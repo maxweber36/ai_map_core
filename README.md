@@ -23,11 +23,12 @@ AI Map 系统由两个层次的文档构成：
 ```text
 .
 ├── ai-map/                  # AI Map 核心文档目录
-│   ├── AI_MAP.md   # 总地图 (项目全局索引)
-│   └── INTEGRATION_GUIDE.md # 快速迁移与集成指南
-├── tool/
+│   ├── AI_MAP.md            # 总地图 (项目全局索引)
+│   ├── config.sh            # [可选] 项目配置文件 (自定义扫描路径等)
+│   └── INTEGRATION.md       # 快速迁移与集成指南
+├── bin/
 │   └── sync_guide.sh        # 自动化同步工具 (聚合 CONTEXT.md)
-├── lib/                     # 源代码 (以 Flutter 为例)
+├── lib/                     # 源代码 (以 Flutter 为例，支持任意语言)
 │   ├── features/
 │   │   └── my_feature/
 │   │       ├── CONTEXT.md   # 模块微观路标 (手动维护/AI 更新)
@@ -42,119 +43,65 @@ AI Map 系统由两个层次的文档构成：
 
 ### 第 0 步：AI 辅助初始化 (Bootstrap)
 
-如果你在一个现有项目中开始，建议让 AI 助手通过探索代码来为你生成首份地图。**注意：必须要求 AI 遵循下文“第一步”中提供的 Markdown 模板结构。**
+如果你在一个现有项目中开始，建议让 AI 助手通过探索代码来为你生成首份地图。
 
-> **AI 指令示例：**
-> "请深度探索我目前的项目结构和核心代码逻辑，并在 `ai-map/` 目录下为我创建一份 `AI_MAP.md`。
->
-> **要求：**
->
-> 1. **遵循模板**：必须使用以下结构，特别是包含 `MODULE_INDEX` 的占位符：
->
->    ```markdown
->    # AI Map & Architecture Map
->
->    ## Project Navigation
->
->    <!-- MODULE_INDEX_START -->
->
->    | Module Path | Responsibility Summary |
->    | ----------- | ---------------------- |
->
->    <!-- MODULE_INDEX_END -->
->
->    ## Global Conventions
->
->    (在此填入你探索到的技术栈、架构模式和编码规范)
->    ```
->
-> 2. **职责填充**：在模块列表中，基于你的理解填入目前主要目录的职责描述。
-> 3. **仅限文档**：请仅负责生成这份概览文档，暂不需要创建任何自动化脚本。"
+### 第一步：安装工具脚本
 
----
-
-### 第一步：搭建基础设施 (Infrastructure)
-
-如果你选择手动搭建，请按以下结构操作：
-
-#### 1. 创建总地图：`ai-map/AI_MAP.md`
-
-在项目根目录创建 `ai-map` 文件夹，并创建 `AI_MAP.md`。它作为 AI 的入口索引和项目概览。
-
-**模板内容：**
-
-```markdown
-# AI Map & Architecture Map
-
-## Project Navigation
-
-<!-- MODULE_INDEX_START -->
-<!-- 此区域由 ./tool/sync_guide.sh 自动维护，请勿手动编辑 -->
-
-| Module Path | Responsibility Summary |
-| ----------- | ---------------------- |
-
-<!-- MODULE_INDEX_END -->
-
-## Global Conventions
-
-在此处写下项目级的全局规范（例如：命名规则、Git 流程、核心技术栈）。
-```
-
-#### 2. 创建同步工具：`tool/sync_guide.sh`
-
-此脚本负责将分散的 `CONTEXT.md` 聚合到总地图。
-
-**通用脚本模板 (Bash):**
+复制 `bin/sync_guide.sh` 到你的项目 `bin/` 目录（或其他工具目录），并赋予执行权限。
 
 ```bash
-#!/bin/bash
-# 定义需要扫描的目录 (空格分隔)
-scan_dirs="lib/features lib/core lib/app"
-output_file="ai-map/AI_MAP.md"
-temp_file="temp_index.md"
-
-mkdir -p ai-map
-
-echo "Starting AI Map Sync..."
-echo "| Module Path | Responsibility Summary |" > "$temp_file"
-echo "|---|---|" >> "$temp_file"
-
-# 遍历目录并提取责任描述
-for dir in $scan_dirs; do
-    if [ -d "$dir" ]; then
-        find "$dir" -name "CONTEXT.md" | sort | while read -r file; do
-            module_path=$(dirname "$file")
-            summary=$(sed -n '/## .*Responsibility.*/{n;p;}' "$file" | sed 's/^> //')
-            if [ -n "$summary" ]; then
-                echo "| $module_path | $summary |" >> "$temp_file"
-            fi
-        done
-    fi
-done
-
-# 将扫描结果注入总地图
-if [ -f "$output_file" ]; then
-    sed -i.bak -e "/<!-- MODULE_INDEX_START -->/,/<!-- MODULE_INDEX_END -->/{
-        /<!-- MODULE_INDEX_START -->/{p; r $temp_file
-        };
-        /<!-- MODULE_INDEX_END -->/p; d;
-    }" "$output_file"
-    rm "${output_file}.bak" 2>/dev/null
-else
-    echo "# AI Map\n\n<!-- MODULE_INDEX_START -->" > "$output_file"
-    cat "$temp_file" >> "$output_file"
-    echo "<!-- MODULE_INDEX_END -->" >> "$output_file"
-fi
-rm "$temp_file"
-echo "$output_file has been updated."
+mkdir -p bin
+cp /path/to/ai-map-core/bin/sync_guide.sh bin/
+chmod +x bin/sync_guide.sh
 ```
 
-_授权：`chmod +x tool/sync_guide.sh`_
+**✨ 智能特性：**
+该脚本现已支持 **自动探测 (Auto-detect)** 项目类型。
+
+- **Flutter**: 自动扫描 `lib/features`, `lib/core`
+- **Node.js**: 自动扫描 `src/modules`, `src/features` 等
+- **Go**: 自动扫描 `internal`, `pkg`
+- **Python**: 自动探测源码目录
+
+### 第二步：高级配置 (可选)
+
+如果自动探测不满足需求，或者你想自定义扫描路径，请创建 `ai-map/config.sh`：
+
+```bash
+# ai-map/config.sh 示例
+
+# 自定义项目名称
+HEADER_PROJECT_NAME="My Super App"
+
+# 强制指定扫描目录 (空格分隔)
+TARGET_DIRS="app/routers app/services app/utils"
+
+# 自定义技术栈描述 (显示在 AI_MAP.md 头部)
+HEADER_TECH_STACK=$(cat <<EOF
+- **Framework**: FastAPI
+- **Database**: PostgreSQL
+- **Architecture**: Domain Driven Design
+EOF
+)
+```
+
+### 第三步：生成/同步地图
+
+运行脚本：
+
+```bash
+./bin/sync_guide.sh
+```
+
+脚本会：
+
+1.  自动为扫描到的模块目录创建缺少的 `CONTEXT.md` 模板。
+2.  提取现有 `CONTEXT.md` 中的职责描述。
+3.  生成/更新 `ai-map/AI_MAP.md`。
 
 ---
 
-### 第二步：配置 AI 指令 (System Prompt)
+### 第四步：配置 AI 指令 (System Prompt)
 
 将以下规则添加到您的 AI 助手配置中（如 `.cursorrules`, `.gemini/GEMINI.md` 等）。
 
@@ -165,16 +112,17 @@ This project uses a tiered documentation system called "AI Map".
 
 1. **Global Map**: `ai-map/AI_MAP.md`.
 2. **Local Context**: Each significant directory contains a `CONTEXT.md`.
-   **Your Mandate:**
+
+**Your Mandate:**
 
 - **Read First**: Before editing a module, read its `CONTEXT.md`.
 - **Update Always**: If you modify logic, you MUST update its `CONTEXT.md`.
-- **Sync**: After updating, run `./tool/sync_guide.sh`.
+- **Sync**: After updating, run `./bin/sync_guide.sh`.
 ```
 
 ---
 
-### 第三步：部署自动化守门员 (Git Hook)
+### 第五步：部署自动化守门员 (Git Hook)
 
 为了防止开发者（或 AI）忘记更新文档，配置 Git Hook 进行强制校验。
 
@@ -184,12 +132,13 @@ This project uses a tiered documentation system called "AI Map".
 #!/bin/bash
 staged_files=$(git diff --cached --name-only)
 # 检查修改的代码是否同步更新了对应的 CONTEXT.md
-echo "$staged_files" | grep "\.dart$" | while read -r file; do
+echo "$staged_files" | grep -E "\.(dart|ts|js|go|py)$" | while read -r file; do
     dir=$(dirname "$file")
-    while [[ "$dir" == lib* ]]; do
+    while [[ "$dir" != "." && "$dir" != "/" ]]; do
         if [ -f "$dir/CONTEXT.md" ]; then
             if ! echo "$staged_files" | grep -q "^$dir/CONTEXT.md$"; then
-                echo "[AI Map] Missing CONTEXT.md update for: $dir"
+                echo "[AI Map] ❌ Missing CONTEXT.md update for: $dir"
+                echo "         Please update the documentation to match your code changes."
                 exit 1
             fi
             break
@@ -198,16 +147,6 @@ echo "$staged_files" | grep "\.dart$" | while read -r file; do
     done
 done
 ```
-
----
-
-### 第四步：渐进式工作流 (Workflow)
-
-1.  **代码修改**：像往常一样编写代码。
-2.  **触发校验**：执行 `git commit`。
-3.  **智能拦截**：如果拦截，直接让 AI：“为我更新 [目录名] 的 CONTEXT.md”。
-4.  **AI 更新并同步**：AI 完成文档补全和同步。
-5.  **顺利提交**：通过。
 
 ---
 
