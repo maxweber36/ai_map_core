@@ -1,6 +1,6 @@
 # AI Map 指南
 
-本指南介绍如何将 **AI Map** 文档系统移植到任何现有项目中。这套系统的核心目标是解决 AI 在大型项目中的**上下文遗忘**和**幻觉**问题，通过"宏观地图"和"微观路标"让 AI 始终保持对项目架构的清晰认知。
+本指南介绍如何将 **AI Map** 文档系统移植到任何现有项目中。这套系统的核心目标是解决 AI 在软件项目中的**上下文遗忘**和**幻觉**问题，通过"宏观地图"和"微观路标"让 AI 始终保持对项目架构的清晰认知。
 
 ---
 
@@ -13,6 +13,27 @@ AI Map 系统由两个层次的文档构成：
 
 2.  **各模块目录下的 `CONTEXT.md` (微观路标)**
     分布在各个业务或功能模块中的详细文档。它定义了该模块的**单一职责**、**内部架构**、**对外接口**以及**模块特有的开发规范**。
+
+### 🔄 信息流向 (Information Flow)
+
+```text
+       [ AI Assistant ]
+              |
+              | 1. Reads
+              v
+      [ ai-map/AI_MAP.md ] <-------+
+      (Global Index/Rules)         |
+              |                    | 4. Auto-Sync
+              | 2. Guides          | (via sync_guide.sh)
+              v                    |
+      [ Module/CONTEXT.md ] -------+
+      (Local Context/Spec)
+              ^
+              | 3. Enforces Consistency
+              | (via Git Hook)
+              v
+      [ Source Code ]
+```
 
 ---
 
