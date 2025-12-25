@@ -29,10 +29,31 @@ usage() {
 Usage:
   ./bin/sync_guide.sh --init    Initialize AI_MAP.md and scaffold CONTEXT.md templates
   ./bin/sync_guide.sh --sync    Sync module responsibilities into AI_MAP.md
+  ./bin/sync_guide.sh --init --force-map       Force reinitialize AI_MAP.md
+  ./bin/sync_guide.sh --init --force-context   Force reinitialize CONTEXT.md
+  ./bin/sync_guide.sh --init --force-all       Force reinitialize AI_MAP.md and CONTEXT.md
 EOF
 }
 
 MODE=""
+FORCE_MAP="false"
+FORCE_CONTEXT="false"
+FORCE_ALL="false"
+args=("$@")
+for arg in "${args[@]}"; do
+    case "$arg" in
+        --force-map)
+            FORCE_MAP="true"
+            ;;
+        --force-context)
+            FORCE_CONTEXT="true"
+            ;;
+        --force-all)
+            FORCE_ALL="true"
+            ;;
+    esac
+done
+
 case "${1:-}" in
     --init)
         MODE="init"
@@ -49,6 +70,11 @@ case "${1:-}" in
         exit 1
         ;;
 esac
+
+if [ "$MODE" != "init" ] && { [ "$FORCE_MAP" = "true" ] || [ "$FORCE_CONTEXT" = "true" ] || [ "$FORCE_ALL" = "true" ]; }; then
+    echo "❌ --force-map/--force-context/--force-all 仅可与 --init 一起使用。"
+    exit 1
+fi
 
 echo "🚀 Starting AI Map Sync ($MODE)..."
 
@@ -179,6 +205,9 @@ MODULES_TABLE=$(mktemp)
 echo "| Module | Responsibility | Context |" >> "$MODULES_TABLE"
 echo "| :--- | :--- | :---: |" >> "$MODULES_TABLE"
 
+INITIALIZED_MODULES=()
+EXISTING_MODULES=()
+
 if [ -n "$FINAL_DIRS" ]; then
     echo "🔍 Scanning directories: $FINAL_DIRS"
     for parent_dir in $FINAL_DIRS; do
@@ -186,13 +215,17 @@ if [ -n "$FINAL_DIRS" ]; then
         for module_path in "$parent_dir"/*; do
             if [ -d "$module_path" ]; then
                 module_name=$(basename "$module_path")
+                clean_path=${module_path#./}
                 context_path="$module_path/$CONTEXT_FILE"
                 responsibility="*(Pending)*"
 
                 # 1. 检查并生成模板（init/sync 都会补全缺失模板）
-                if [ ! -f "$context_path" ]; then
+                if [ ! -f "$context_path" ] || [ "$FORCE_CONTEXT" = "true" ] || [ "$FORCE_ALL" = "true" ]; then
                     echo "   📝 Scaffolding $CONTEXT_FILE for: $module_name"
                     generate_context_template "$module_name" > "$context_path"
+                    INITIALIZED_MODULES+=("$clean_path")
+                else
+                    EXISTING_MODULES+=("$clean_path")
                 fi
 
                 # 2. 仅在 sync 模式提取职责
@@ -205,7 +238,6 @@ if [ -n "$FINAL_DIRS" ]; then
                 fi
 
                 # 3. 添加到表格
-                clean_path=${module_path#./}
                 # 生成相对链接
                 echo "| $clean_path | $responsibility | [View](../$clean_path/$CONTEXT_FILE) |" >> "$MODULES_TABLE"
             fi
@@ -258,11 +290,36 @@ write_new_guide() {
     echo "*Last synced: $(date)*" >> "$GUIDE_FILE"
 }
 
+print_init_summary() {
+    if [ ${#INITIALIZED_MODULES[@]} -eq 0 ] && [ ${#EXISTING_MODULES[@]} -eq 0 ]; then
+        echo "ℹ️  未发现可初始化的模块。"
+        return
+    fi
+    echo "📋 CONTEXT.md 初始化清单:"
+    if [ ${#INITIALIZED_MODULES[@]} -gt 0 ]; then
+        echo "  - 新建:"
+        for m in "${INITIALIZED_MODULES[@]}"; do
+            echo "    - $m"
+        done
+    fi
+    if [ ${#EXISTING_MODULES[@]} -gt 0 ]; then
+        echo "  - 已存在:"
+        for m in "${EXISTING_MODULES[@]}"; do
+            echo "    - $m"
+        done
+    fi
+}
+
 # 确保输出目录存在
 mkdir -p "$(dirname "$GUIDE_FILE")"
 
 if [ "$MODE" = "init" ] || [ ! -f "$GUIDE_FILE" ]; then
-    write_new_guide
+    if [ "$MODE" = "init" ] && [ -f "$GUIDE_FILE" ] && [ "$FORCE_MAP" != "true" ] && [ "$FORCE_ALL" != "true" ]; then
+        echo "ℹ️  $GUIDE_FILE already exists. Skipping init."
+        echo "   Use --force-map or --force-all to reinitialize the document."
+    else
+        write_new_guide
+    fi
 else
     if grep -q "<!-- MODULE_INDEX_START -->" "$GUIDE_FILE" && grep -q "<!-- MODULE_INDEX_END -->" "$GUIDE_FILE"; then
         tmp_guide=$(mktemp)
@@ -285,5 +342,9 @@ else
 fi
 
 rm "$MODULES_TABLE" "$MODULES_SECTION"
+
+if [ "$MODE" = "init" ]; then
+    print_init_summary
+fi
 
 echo "✅ $GUIDE_FILE has been updated."

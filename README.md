@@ -105,7 +105,14 @@ TARGET_DIRS="app/routers app/services app/utils"
 
 1.  生成/更新 `ai-map/AI_MAP.md` 的框架内容（仅骨架，项目名/技术栈为占位符）。
 2.  若命中 `TARGET_DIRS`，在其 **一级子目录**生成 `CONTEXT.md` 骨架模板。
-3.  **不会**提取职责内容，仅搭建结构。
+3.  输出已完成 `CONTEXT.md` 初始化的模块清单。
+4.  **不会**提取职责内容，仅搭建结构。
+
+> **注意**：若 `ai-map/AI_MAP.md` 已存在，`--init` 默认不会覆盖。可使用以下参数强制重建：
+>
+> - `--init --force-map`：仅重建 `AI_MAP.md`
+> - `--init --force-context`：仅重建模块 `CONTEXT.md`
+> - `--init --force-all`：两者都重建
 
 ### 第四步：AI 辅助内容填充
 
