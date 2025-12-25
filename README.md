@@ -8,7 +8,7 @@
 
 AI Map 系统由两个层次的文档构成：
 
-1.  **`ai-map/DEVELOPER_GUIDE.md` (总地图)**
+1.  **`ai-map/AI_MAP.md` (总地图)**
     项目的“宪法”和核心索引。它定义了全局架构规范、编码准则，并通过自动化脚本实时同步各子模块的职责摘要。它是 AI 进入项目后的首要参考点。
 
 2.  **各模块目录下的 `CONTEXT.md` (微观路标)**
@@ -23,7 +23,7 @@ AI Map 系统由两个层次的文档构成：
 ```text
 .
 ├── ai-map/                  # AI Map 核心文档目录
-│   ├── DEVELOPER_GUIDE.md   # 总地图 (项目全局索引)
+│   ├── AI_MAP.md   # 总地图 (项目全局索引)
 │   └── INTEGRATION_GUIDE.md # 快速迁移与集成指南
 ├── tool/
 │   └── sync_guide.sh        # 自动化同步工具 (聚合 CONTEXT.md)
@@ -45,14 +45,14 @@ AI Map 系统由两个层次的文档构成：
 如果你在一个现有项目中开始，建议让 AI 助手通过探索代码来为你生成首份地图。**注意：必须要求 AI 遵循下文“第一步”中提供的 Markdown 模板结构。**
 
 > **AI 指令示例：**
-> "请深度探索我目前的项目结构和核心代码逻辑，并在 `ai-map/` 目录下为我创建一份 `DEVELOPER_GUIDE.md`。
+> "请深度探索我目前的项目结构和核心代码逻辑，并在 `ai-map/` 目录下为我创建一份 `AI_MAP.md`。
 >
 > **要求：**
 >
 > 1. **遵循模板**：必须使用以下结构，特别是包含 `MODULE_INDEX` 的占位符：
 >
 >    ```markdown
->    # Developer Guide & Architecture Map
+>    # AI Map & Architecture Map
 >
 >    ## Project Navigation
 >
@@ -77,14 +77,14 @@ AI Map 系统由两个层次的文档构成：
 
 如果你选择手动搭建，请按以下结构操作：
 
-#### 1. 创建总地图：`ai-map/DEVELOPER_GUIDE.md`
+#### 1. 创建总地图：`ai-map/AI_MAP.md`
 
-在项目根目录创建 `ai-map` 文件夹，并创建 `DEVELOPER_GUIDE.md`。它作为 AI 的入口索引和项目概览。
+在项目根目录创建 `ai-map` 文件夹，并创建 `AI_MAP.md`。它作为 AI 的入口索引和项目概览。
 
 **模板内容：**
 
 ```markdown
-# Developer Guide & Architecture Map
+# AI Map & Architecture Map
 
 ## Project Navigation
 
@@ -111,12 +111,12 @@ AI Map 系统由两个层次的文档构成：
 #!/bin/bash
 # 定义需要扫描的目录 (空格分隔)
 scan_dirs="lib/features lib/core lib/app"
-output_file="ai-map/DEVELOPER_GUIDE.md"
+output_file="ai-map/AI_MAP.md"
 temp_file="temp_index.md"
 
 mkdir -p ai-map
 
-echo "Starting Developer Guide Sync..."
+echo "Starting AI Map Sync..."
 echo "| Module Path | Responsibility Summary |" > "$temp_file"
 echo "|---|---|" >> "$temp_file"
 
@@ -142,7 +142,7 @@ if [ -f "$output_file" ]; then
     }" "$output_file"
     rm "${output_file}.bak" 2>/dev/null
 else
-    echo "# Developer Guide\n\n<!-- MODULE_INDEX_START -->" > "$output_file"
+    echo "# AI Map\n\n<!-- MODULE_INDEX_START -->" > "$output_file"
     cat "$temp_file" >> "$output_file"
     echo "<!-- MODULE_INDEX_END -->" >> "$output_file"
 fi
@@ -163,7 +163,7 @@ _授权：`chmod +x tool/sync_guide.sh`_
 
 This project uses a tiered documentation system called "AI Map".
 
-1. **Global Map**: `ai-map/DEVELOPER_GUIDE.md`.
+1. **Global Map**: `ai-map/AI_MAP.md`.
 2. **Local Context**: Each significant directory contains a `CONTEXT.md`.
    **Your Mandate:**
 

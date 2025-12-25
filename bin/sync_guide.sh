@@ -1,24 +1,24 @@
 #!/bin/bash
 
 # ==============================================================================
-# 📖 Developer Guide Sync Tool (Fixed)
+# 📖 AI Map Sync Tool (Fixed)
 # ==============================================================================
 
-GUIDE_FILE="ai-map/DEVELOPER_GUIDE.md"
+GUIDE_FILE="ai-map/AI_MAP.md"
 CONTEXT_FILE="CONTEXT.md"
 TARGET_DIRS="lib/features lib/core lib/app"
 
 # 1. 确保在脚本出错时退出
 set -e
 
-echo "🚀 Starting Developer Guide Sync..."
+echo "🚀 Starting AI Map Sync..."
 
 # --- 函数定义 ---
 
 generate_guide_header() {
     # 使用单引号 EOF 防止任何扩展，除了我们需要手动插入变量的地方
     cat <<EOF
-# 📖 DEVELOPER GUIDE
+# 📖 AI MAP
 
 > 🤖 **AI 与开发者必读**
 > 本文档是项目的“宪法”。它定义了项目的核心架构、开发规范和模块地图。

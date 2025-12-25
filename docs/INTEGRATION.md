@@ -11,12 +11,12 @@
 如果你在一个现有项目中开始，建议让 AI 助手通过探索代码来为你生成首份地图。**注意：必须要求 AI 遵循下文“第一步”中提供的 Markdown 模板结构。**
 
 > **AI 指令示例：**
-> "请深度探索我目前的项目结构和核心代码逻辑，并在 `ai-map/` 目录下为我创建一份 `DEVELOPER_GUIDE.md`。
+> "请深度探索我目前的项目结构和核心代码逻辑，并在 `ai-map/` 目录下为我创建一份 `AI_MAP.md`。
 >
 > **要求：**
 > 1. **遵循模板**：必须使用以下结构，特别是包含 `MODULE_INDEX` 的占位符：
 >    ```markdown
->    # Developer Guide & Architecture Map
+>    # AI Map & Architecture Map
 >
 >    ## 🗺️ Project Navigation
 >    <!-- MODULE_INDEX_START -->
@@ -35,7 +35,7 @@
 ### 第一步：搭建基础设施 (Infrastructure)
 
 #### 1. 创建总地图
-复制 `templates/ai-map/DEVELOPER_GUIDE.md` 到你的项目根目录下的 `ai-map/` 文件夹。
+复制 `templates/ai-map/AI_MAP.md` 到你的项目根目录下的 `ai-map/` 文件夹。
 
 #### 2. 安装同步工具
 复制 `bin/sync_guide.sh` 到你的项目根目录下的 `tool/` 文件夹。
@@ -53,7 +53,7 @@ chmod +x tool/sync_guide.sh
 ```markdown
 # AI Map / Documentation Strategy
 This project uses a tiered documentation system called "AI Map".
-1. **Global Map**: `ai-map/DEVELOPER_GUIDE.md`.
+1. **Global Map**: `ai-map/AI_MAP.md`.
 2. **Local Context**: Each significant directory contains a `CONTEXT.md`.
 **Your Mandate:**
 - **Read First**: Before editing a module, read its `CONTEXT.md`.
