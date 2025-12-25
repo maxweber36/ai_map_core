@@ -1,0 +1,19 @@
+#!/bin/bash
+# AI Map: Ensure CONTEXT.md is updated when code changes
+
+staged_files=$(git diff --cached --name-only)
+# Check if modified dart files have corresponding CONTEXT.md updates
+echo "$staged_files" | grep "\.dart$" | while read -r file; do
+    dir=$(dirname "$file")
+    while [[ "$dir" == lib* || "$dir" == src* ]]; do
+        if [ -f "$dir/CONTEXT.md" ]; then
+            if ! echo "$staged_files" | grep -q "^$dir/CONTEXT.md$"; then
+                echo "🚫 [AI Map] Missing CONTEXT.md update for: $dir"
+                echo "💡 Tip: Ask AI to 'Update CONTEXT.md for $dir'"
+                exit 1
+            fi
+            break
+        fi
+        dir=$(dirname "$dir")
+    done
+done
