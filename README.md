@@ -24,7 +24,7 @@ AI Map 系统由两个层次的文档构成：
       [ ai-map/AI_MAP.md ] <-------+
       (Global Index/Rules)         |
               |                    | 4. Auto-Sync
-              | 2. Guides          | (via sync_guide.sh)
+              | 2. Guides          | (via sync_guide.sh --sync)
               v                    |
       [ Module/CONTEXT.md ] -------+
       (Local Context/Spec)
@@ -46,7 +46,6 @@ AI Map 系统由两个层次的文档构成：
 ├── ai-map/                  # AI Map 核心文档目录
 │   ├── AI_MAP.md            # 总地图 (项目全局索引)
 │   ├── config.sh            # [可选] 项目配置文件 (自定义扫描路径等)
-│   └── INTEGRATION.md       # 快速迁移与集成指南
 ├── bin/
 │   └── sync_guide.sh        # 自动化同步工具 (聚合 CONTEXT.md)
 ├── lib/                     # 源代码 (以 Flutter 为例，支持任意语言)
@@ -60,13 +59,7 @@ AI Map 系统由两个层次的文档构成：
 
 ---
 
-## 快速开始 (5 步实现 AI 驱动的文档自动化)
-
-### 第 0 步：AI 辅助初始化 (Bootstrap)
-
-如果你在一个现有项目中开始，建议让 AI 助手通过探索代码来为你生成首份地图。
-
-> **提示**：AI 辅助初始化 prompt 已存储在 `ai-map/INITIALIZE_PROMPT.md`，可直接复制使用。
+## 快速开始 (7 步实现 AI 驱动的文档自动化)
 
 ### 第一步：安装工具脚本
 
@@ -86,9 +79,12 @@ chmod +x bin/sync_guide.sh
 - **Go**: 自动扫描 `internal`, `pkg`
 - **Python**: 自动探测源码目录
 
+> **注意：** 脚本需显式指定模式（`--init` / `--sync`），不带参数会提示用法并退出。
+
 ### 第二步：高级配置 (可选)
 
-如果自动探测不满足需求，或者你想自定义扫描路径，请创建 `ai-map/config.sh`：
+如果自动探测不满足需求，或者你想自定义扫描路径，请创建 `ai-map/config.sh`。
+该配置会影响 **初始化阶段**（`--init`）与 **同步阶段**（`--sync`）的模块扫描范围：
 
 ```bash
 # ai-map/config.sh 示例
@@ -108,23 +104,43 @@ EOF
 )
 ```
 
-### 第三步：生成/同步地图
+### 第三步：初始化文档框架（首次运行）
 
 运行脚本：
 
 ```bash
-./bin/sync_guide.sh
+./bin/sync_guide.sh --init
+```
+
+脚本会：
+
+1.  生成/更新 `ai-map/AI_MAP.md` 的框架内容。
+2.  若命中 `TARGET_DIRS`，在其 **一级子目录**生成 `CONTEXT.md` 骨架模板。
+3.  **不会**提取职责内容，仅搭建结构。
+
+### 第四步：AI 辅助内容填充 (可选)
+
+如果你希望 AI 参与内容填充，建议先完成 `--init` 搭建文档骨架，再让 AI 依据骨架补充真实职责与规范。
+
+> **提示**：AI 辅助初始化 prompt 已存储在 `ai-map/INITIALIZE_PROMPT.md`，可直接复制使用。
+
+### 第五步：同步模块索引（后续使用）
+
+运行脚本：
+
+```bash
+./bin/sync_guide.sh --sync
 ```
 
 脚本会：
 
 1.  自动为扫描到的模块目录创建缺少的 `CONTEXT.md` 模板。
 2.  提取现有 `CONTEXT.md` 中的职责描述。
-3.  生成/更新 `ai-map/AI_MAP.md`。
+3.  生成/更新 `ai-map/AI_MAP.md` 的模块索引。
 
 ---
 
-### 第四步：配置 AI 指令 (System Prompt)
+### 第六步：配置 AI 指令 (System Prompt)
 
 将以下规则添加到您的 AI 助手配置中（如 `.cursorrules`, `.gemini/GEMINI.md` 等）。
 
@@ -140,12 +156,12 @@ This project uses a tiered documentation system called "AI Map".
 
 - **Read First**: Before editing a module, read its `CONTEXT.md`.
 - **Update Always**: If you modify logic, you MUST update its `CONTEXT.md`.
-- **Sync**: After updating, run `./bin/sync_guide.sh`.
+- **Sync**: After updating, run `./bin/sync_guide.sh --sync`.
 ```
 
 ---
 
-### 第五步：部署自动化守门员 (Git Hook)
+### 第七步：部署自动化守门员 (Git Hook)
 
 为了防止开发者（或 AI）忘记更新文档，配置 Git Hook 进行强制校验。
 

@@ -19,7 +19,33 @@ TARGET_DIRS="" # 将由自动探测或配置填充
 # 1. 确保在脚本出错时退出
 set -e
 
-echo "🚀 Starting AI Map Sync..."
+usage() {
+    cat <<EOF
+Usage:
+  ./bin/sync_guide.sh --init    Initialize AI_MAP.md and scaffold CONTEXT.md templates
+  ./bin/sync_guide.sh --sync    Sync module responsibilities into AI_MAP.md
+EOF
+}
+
+MODE=""
+case "${1:-}" in
+    --init)
+        MODE="init"
+        ;;
+    --sync)
+        MODE="sync"
+        ;;
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
+
+echo "🚀 Starting AI Map Sync ($MODE)..."
 
 # --- 函数定义 ---
 
@@ -87,7 +113,7 @@ generate_guide_header() {
 
 > 🤖 **AI & Developer Readme**
 > This document is the "Constitution" of the project. It defines core architecture, standards, and the module map.
-> **Note:** The "Module Index" below is auto-generated. Please modify $CONTEXT_FILE in each module directory and run bin/sync_guide.sh to update.
+> **Note:** The "Module Index" below is auto-generated. Please modify $CONTEXT_FILE in each module directory and run bin/sync_guide.sh --sync to update.
 
 ## 🏗️ 架构概览 (Architecture)
 $HEADER_TECH_STACK
@@ -148,10 +174,12 @@ for dir in $TARGET_DIRS; do
 done
 
 if [ -z "$FINAL_DIRS" ]; then
-    echo "❌ No valid target directories found to scan."
-    echo "   Configured targets: $TARGET_DIRS"
-    echo "   Please check your project structure or create '$CONFIG_FILE' to specify 'TARGET_DIRS'."
-    exit 1
+    if [ "$MODE" = "sync" ]; then
+        echo "❌ No valid target directories found to scan."
+        echo "   Configured targets: $TARGET_DIRS"
+        echo "   Please check your project structure or create '$CONFIG_FILE' to specify 'TARGET_DIRS'."
+        exit 1
+    fi
 fi
 
 # --- 主逻辑 (扫描与生成) ---
@@ -165,36 +193,41 @@ echo "" >> "$MODULES_BUFFER"
 echo "| Module | Responsibility | Context |" >> "$MODULES_BUFFER"
 echo "| :--- | :--- | :---: |" >> "$MODULES_BUFFER"
 
-echo "🔍 Scanning directories: $FINAL_DIRS"
+if [ -n "$FINAL_DIRS" ]; then
+    echo "🔍 Scanning directories: $FINAL_DIRS"
+    for parent_dir in $FINAL_DIRS; do
+        # 遍历子目录
+        for module_path in "$parent_dir"/*; do
+            if [ -d "$module_path" ]; then
+                module_name=$(basename "$module_path")
+                context_path="$module_path/$CONTEXT_FILE"
+                responsibility="*(Pending)*"
 
-for parent_dir in $FINAL_DIRS; do
-    # 遍历子目录
-    for module_path in "$parent_dir"/*; do
-        if [ -d "$module_path" ]; then
-            module_name=$(basename "$module_path")
-            context_path="$module_path/$CONTEXT_FILE"
-            responsibility="*(Pending)*"
-
-            # 1. 检查并生成模板
-            if [ ! -f "$context_path" ]; then
-                echo "   📝 Scaffolding $CONTEXT_FILE for: $module_name"
-                generate_context_template "$module_name" > "$context_path"
-            else
-                # 2. 提取职责
-                # 逻辑：查找 '## 🎯' 下方的第一个以 '>' 开头的行，并去掉 '>'
-                extracted=$(awk '/## 🎯/{flag=1; next} /##/{flag=0} flag && /^>/{print substr($0, 3); exit}' "$context_path" || true)
-                if [ ! -z "$extracted" ]; then
-                    responsibility="$extracted"
+                # 1. 检查并生成模板（init/sync 都会补全缺失模板）
+                if [ ! -f "$context_path" ]; then
+                    echo "   📝 Scaffolding $CONTEXT_FILE for: $module_name"
+                    generate_context_template "$module_name" > "$context_path"
                 fi
-            fi
 
-            # 3. 添加到表格
-            clean_path=${module_path#./}
-            # 生成相对链接
-            echo "| $clean_path | $responsibility | [View](../$clean_path/$CONTEXT_FILE) |" >> "$MODULES_BUFFER"
-        fi
+                # 2. 仅在 sync 模式提取职责
+                if [ "$MODE" = "sync" ] && [ -f "$context_path" ]; then
+                    # 逻辑：查找 '## 🎯' 下方的第一个以 '>' 开头的行，并去掉 '>'
+                    extracted=$(awk '/## 🎯/{flag=1; next} /##/{flag=0} flag && /^>/{print substr($0, 3); exit}' "$context_path" || true)
+                    if [ ! -z "$extracted" ]; then
+                        responsibility="$extracted"
+                    fi
+                fi
+
+                # 3. 添加到表格
+                clean_path=${module_path#./}
+                # 生成相对链接
+                echo "| $clean_path | $responsibility | [View](../$clean_path/$CONTEXT_FILE) |" >> "$MODULES_BUFFER"
+            fi
+        done
     done
-done
+else
+    echo "ℹ️  No target directories found. Will only generate $GUIDE_FILE."
+fi
 
 # --- 组装最终文件 ---
 

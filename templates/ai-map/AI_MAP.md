@@ -2,7 +2,7 @@
 
 > **AI 与开发者必读**
 > 本文档是项目的“宪法”。它定义了项目的核心架构、开发规范和模块地图。
-> **注意：** 下方的“模块索引”由脚本自动生成。请修改各模块目录下的 CONTEXT.md，然后运行 tool/sync_guide.sh 同步。
+> **注意：** 下方的“模块索引”由脚本自动生成。请修改各模块目录下的 CONTEXT.md，然后运行 tool/sync_guide.sh --sync 同步。
 
 ## 全局架构规范 (Global Architecture)
 
