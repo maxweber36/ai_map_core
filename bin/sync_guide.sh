@@ -323,15 +323,22 @@ if [ "$MODE" = "init" ] || [ ! -f "$GUIDE_FILE" ]; then
 else
     if grep -q "<!-- MODULE_INDEX_START -->" "$GUIDE_FILE" && grep -q "<!-- MODULE_INDEX_END -->" "$GUIDE_FILE"; then
         tmp_guide=$(mktemp)
-        awk -v table_file="$MODULES_TABLE" '
-            BEGIN {
-                while ((getline line < table_file) > 0) {
-                    table = table line "\n"
+        # 使用管道方式读取表格，避免 awk 内变量换行问题
+        awk '
+            /<!-- MODULE_INDEX_START -->/ {
+                print
+                while ((getline line < "'"$MODULES_TABLE"'") > 0) {
+                    print line
                 }
+                skip=1
+                next
             }
-            /<!-- MODULE_INDEX_START -->/ { print; print table; in=1; next }
-            /<!-- MODULE_INDEX_END -->/ { print; in=0; next }
-            !in { print }
+            /<!-- MODULE_INDEX_END -->/ {
+                print
+                skip=0
+                next
+            }
+            !skip { print }
         ' "$GUIDE_FILE" > "$tmp_guide"
         mv "$tmp_guide" "$GUIDE_FILE"
         update_last_synced "$GUIDE_FILE"
