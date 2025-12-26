@@ -24,7 +24,7 @@ AI Map 系统由两个层次的文档构成：
       [ ai-map/AI_MAP.md ] <-------+
       (Global Index/Rules)         |
               |                    | 4. Auto-Sync
-              | 2. Guides          | (via sync_guide.sh --sync)
+              | 2. Guides          | (via ai_map.sh --sync)
               v                    |
       [ Module/CONTEXT.md ] -------+
       (Local Context/Spec)
@@ -47,7 +47,7 @@ AI Map 系统由两个层次的文档构成：
 │   ├── AI_MAP.md            # 总地图 (项目全局索引)
 │   ├── config.sh            # [可选] 项目配置文件 (仅配置 TARGET_DIRS)
 ├── bin/
-│   └── sync_guide.sh        # 自动化同步工具 (聚合 CONTEXT.md)
+│   └── ai_map.sh        # 自动化同步工具 (聚合 CONTEXT.md)
 ├── lib/                     # 源代码 (以 Flutter 为例，支持任意语言)
 │   ├── features/
 │   │   └── my_feature/
@@ -63,12 +63,12 @@ AI Map 系统由两个层次的文档构成：
 
 ### 第一步：安装工具脚本
 
-复制 `bin/sync_guide.sh` 到你的项目 `bin/` 目录（或其他工具目录），并赋予执行权限。
+复制 `bin/ai_map.sh` 到你的项目 `bin/` 目录（或其他工具目录），并赋予执行权限。
 
 ```bash
 mkdir -p bin
-cp /path/to/ai-map-core/bin/sync_guide.sh bin/
-chmod +x bin/sync_guide.sh
+cp /path/to/ai-map-core/bin/ai_map.sh bin/
+chmod +x bin/ai_map.sh
 ```
 
 **✨ 智能特性：**
@@ -98,7 +98,7 @@ TARGET_DIRS="app/routers app/services app/utils"
 运行脚本：
 
 ```bash
-./bin/sync_guide.sh --init
+./bin/ai_map.sh --init
 ```
 
 脚本会：
@@ -125,7 +125,7 @@ TARGET_DIRS="app/routers app/services app/utils"
 运行脚本：
 
 ```bash
-./bin/sync_guide.sh --sync
+./bin/ai_map.sh --sync
 ```
 
 脚本会：
@@ -141,7 +141,7 @@ TARGET_DIRS="app/routers app/services app/utils"
 将以下规则添加到您的 AI 助手配置中（如 `.cursorrules`, `.gemini/GEMINI.md` 等）。
 
 ```markdown
-# AI Map / Documentation Strategy
+<!-- AI-MAP:START -->
 
 This project uses a tiered documentation system called "AI Map".
 
@@ -152,7 +152,8 @@ This project uses a tiered documentation system called "AI Map".
 
 - **Read First**: Before editing a module, read its `CONTEXT.md`.
 - **Update Always**: If you modify logic, you MUST update its `CONTEXT.md`.
-- **Sync**: After updating, run `./bin/sync_guide.sh --sync`.
+- **Sync**: After updating, run `./bin/ai_map.sh`.
+<!-- AI-MAP:END -->
 ```
 
 ---

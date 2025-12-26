@@ -27,11 +27,11 @@ set -e
 usage() {
     cat <<EOF
 Usage:
-  ./bin/sync_guide.sh --init    Initialize AI_MAP.md and scaffold CONTEXT.md templates
-  ./bin/sync_guide.sh --sync    Sync module responsibilities into AI_MAP.md
-  ./bin/sync_guide.sh --init --force-map       Force reinitialize AI_MAP.md
-  ./bin/sync_guide.sh --init --force-context   Force reinitialize CONTEXT.md
-  ./bin/sync_guide.sh --init --force-all       Force reinitialize AI_MAP.md and CONTEXT.md
+  ./bin/ai_map.sh --init    Initialize AI_MAP.md and scaffold CONTEXT.md templates
+  ./bin/ai_map.sh --sync    Sync module responsibilities into AI_MAP.md
+  ./bin/ai_map.sh --init --force-map       Force reinitialize AI_MAP.md
+  ./bin/ai_map.sh --init --force-context   Force reinitialize CONTEXT.md
+  ./bin/ai_map.sh --init --force-all       Force reinitialize AI_MAP.md and CONTEXT.md
 EOF
 }
 
@@ -84,12 +84,12 @@ echo "🚀 Starting AI Map Sync ($MODE)..."
 detect_project_defaults() {
     if [ -f "pubspec.yaml" ]; then
         echo "✨ Detected Flutter/Dart project"
-        TARGET_DIRS="lib/features lib/core lib/app"
+        TARGET_DIRS="lib"
     elif [ -f "package.json" ]; then
         echo "✨ Detected Node.js/Web project"
         # 尝试常见的源码目录
         if [ -d "src" ]; then
-            TARGET_DIRS="src/features src/modules src/components src/pages"
+            TARGET_DIRS="src"
         else
             TARGET_DIRS="app features modules"
         fi
@@ -120,7 +120,7 @@ generate_guide_header() {
 
 > 🤖 **AI & Developer Readme**
 > This document is the "Constitution" of the project. It defines core architecture, standards, and the module map.
-> **Note:** The "Module Index" below is auto-generated. Please modify $CONTEXT_FILE in each module directory and run bin/sync_guide.sh --sync to update.
+> **Note:** The "Module Index" below is auto-generated. Please modify $CONTEXT_FILE in each module directory and run bin/ai_map.sh --sync to update.
 
 ## 🏗️ 架构概览 (Architecture)
 $HEADER_TECH_STACK_PLACEHOLDER
